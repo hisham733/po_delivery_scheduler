@@ -71,12 +71,21 @@ class PODeliveryPlan(Document):
 		self.db_set("status", compute_plan_status(self), update_modified=False)
 
 	def cancel_plan(self):
-		"""Cancel the plan and all open schedules on it."""
+		"""Cancel the plan and its outstanding schedules.
+
+		Only schedules that have not been fully received are cancelled. Fully
+		received schedules are left untouched so the delivery history (received
+		quantity and ``Received`` status) is preserved for audit.
+		"""
 		self.db_set("status", "Cancelled")
 
 		open_schedules = frappe.get_all(
 			"PO Delivery Schedule",
-			filters={"delivery_plan": self.name, "cancelled": 0},
+			filters={
+				"delivery_plan": self.name,
+				"cancelled": 0,
+				"status": ("!=", "Received"),
+			},
 			pluck="name",
 		)
 		for name in open_schedules:

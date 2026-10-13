@@ -18,6 +18,7 @@
   "section_break_settings",
   "reminders_enabled",
   "reminder_lead_days",
+  "over_receipt_tolerance",
   "column_break_settings",
   "notes",
   "section_break_schedules",
@@ -102,6 +103,13 @@
    "fieldname": "reminder_lead_days",
    "fieldtype": "Int",
    "label": "Reminder Lead Days"
+  },
+  {
+   "default": "0",
+   "description": "Maximum quantity a receipt may exceed a schedule by before it is rejected. 0 rejects any over-receipt.",
+   "fieldname": "over_receipt_tolerance",
+   "fieldtype": "Float",
+   "label": "Over-Receipt Tolerance"
   },
   {
    "fieldname": "column_break_settings",

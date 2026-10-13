@@ -32,6 +32,7 @@ from frappe import _
 from frappe.utils import flt, getdate, nowdate
 
 from po_delivery_scheduler.po_delivery_scheduler.utils import (
+	EPS,
 	compute_schedule_status,
 	set_plan_status,
 )
@@ -171,20 +172,44 @@ def validate_receipt_schedule_links(pr, method=None) -> None:
 	"""Validate every schedule link present on receipt lines.
 
 	Registered as a ``validate`` doc_event on Purchase Receipt. Runs on every
-	save so a wrong link is rejected before the receipt can be submitted.
+	save so a wrong link or an over-receipt is rejected before the receipt can
+	be submitted.
+
+	Over-receipt policy
+	-------------------
+	A receipt line may not push a schedule's cumulative received quantity (in
+	the schedule's reference UOM) past ``scheduled_qty`` plus the plan's
+	``over_receipt_tolerance``. The default tolerance is 0, i.e. any
+	over-receipt is rejected. The affected schedule row is locked ``FOR UPDATE``
+	so two concurrent receipts cannot both slip through validation.
 	"""
-	items = pr.get("items") or []
-	for item in items:
+	pending_qty: dict = {}
+	meta: dict = {}
+	first_idx: dict = {}
+
+	for item in pr.get("items") or []:
 		schedule_name = _schedule_name(item)
 		if not schedule_name:
 			continue
 
-		values = frappe.db.get_value(
-			"PO Delivery Schedule",
-			schedule_name,
-			["purchase_order", "purchase_order_item", "item_code", "cancelled", "delivery_plan"],
-			as_dict=1,
-		)
+		if schedule_name not in meta:
+			meta[schedule_name] = frappe.db.get_value(
+				"PO Delivery Schedule",
+				schedule_name,
+				[
+					"purchase_order",
+					"purchase_order_item",
+					"item_code",
+					"uom",
+					"cancelled",
+					"delivery_plan",
+					"scheduled_qty",
+					"conversion_factor",
+				],
+				as_dict=1,
+			)
+		values = meta[schedule_name]
+
 		if not values:
 			frappe.throw(
 				_("{0}: Delivery Schedule {1} does not exist or was deleted.").format(
@@ -227,10 +252,51 @@ def validate_receipt_schedule_links(pr, method=None) -> None:
 				).format(item.idx, schedule_name, values.item_code, item.get("item_code"))
 			)
 
-		if not frappe.has_permission("PO Delivery Schedule", "read", doc=frappe.get_doc("PO Delivery Schedule", schedule_name)):
+		if not frappe.has_permission(
+			"PO Delivery Schedule", "read", doc=frappe.get_doc("PO Delivery Schedule", schedule_name)
+		):
 			frappe.throw(
 				_("{0}: You do not have permission to use Delivery Schedule {1}.").format(
 					item.idx, schedule_name
+				)
+			)
+
+		schedule_cf = flt(values.conversion_factor or 1)
+		first_idx.setdefault(schedule_name, item.idx)
+		pending_qty[schedule_name] = pending_qty.get(schedule_name, 0.0) + _convert_to_schedule_uom(
+			item.get("qty"), item.get("conversion_factor"), schedule_cf
+		)
+
+	for schedule_name, added in pending_qty.items():
+		values = meta[schedule_name]
+		if not values or values.cancelled:
+			continue
+
+		# Lock the schedule so concurrent receipts are serialised.
+		frappe.db.sql(
+			"SELECT name FROM `tabPO Delivery Schedule` WHERE name = %s FOR UPDATE", schedule_name
+		)
+
+		schedule_cf = flt(values.conversion_factor or 1)
+		already_received = get_received_quantity_for_schedule(schedule_name, schedule_cf)
+		tolerance = flt(
+			frappe.db.get_value("PO Delivery Plan", values.delivery_plan, "over_receipt_tolerance") or 0
+		)
+		allowed = flt(values.scheduled_qty) + tolerance
+
+		if already_received + added - allowed > EPS:
+			frappe.throw(
+				_(
+					"{0}: Receiving {1} {2} against Delivery Schedule {3} would over-receive it. "
+					"Scheduled quantity is {4} {2}, already received {5} {2}, tolerance {6} {2}."
+				).format(
+					frappe.bold(first_idx.get(schedule_name, "")),
+					frappe.bold(flt(added, 6)),
+					values.uom or "",
+					frappe.bold(schedule_name),
+					frappe.bold(flt(values.scheduled_qty, 6)),
+					frappe.bold(flt(already_received, 6)),
+					frappe.bold(flt(tolerance, 6)),
 				)
 			)
 

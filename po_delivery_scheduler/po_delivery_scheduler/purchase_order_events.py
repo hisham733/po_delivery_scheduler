@@ -30,9 +30,15 @@ def on_purchase_order_cancel(po, method=None) -> None:
 	plan = frappe.get_doc("PO Delivery Plan", plan_name)
 	plan.db_set("status", "Cancelled")
 
+	# Cancel only outstanding schedules. Fully received schedules keep their
+	# ``Received`` status and quantities so the delivery history is preserved.
 	open_schedules = frappe.get_all(
 		"PO Delivery Schedule",
-		filters={"delivery_plan": plan_name, "cancelled": 0},
+		filters={
+			"delivery_plan": plan_name,
+			"cancelled": 0,
+			"status": ("!=", "Received"),
+		},
 		pluck="name",
 	)
 	for name in open_schedules:

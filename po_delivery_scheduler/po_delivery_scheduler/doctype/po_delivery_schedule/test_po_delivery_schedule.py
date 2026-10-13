@@ -77,6 +77,63 @@ class TestPODeliverySchedule(FrappeTestCase):
 		with self.assertRaises(ValidationError):
 			make_receipt(po, delivery_schedule=schedule.name, qty=5)
 
+	def test_over_receipt_rejected_by_default(self):
+		po = make_purchase_order(qty=10)
+		plan = make_plan(po)
+		schedule = make_schedule(plan, qty=5, scheduled_date=add_days(today(), 7))
+
+		with self.assertRaises(ValidationError):
+			make_receipt(po, delivery_schedule=schedule.name, qty=6)
+
+		# exactly the scheduled quantity is allowed
+		make_receipt(po, delivery_schedule=schedule.name, qty=5)
+		schedule.reload()
+		self.assertEqual(schedule.status, "Received")
+
+	def test_over_receipt_across_multiple_receipts_rejected(self):
+		po = make_purchase_order(qty=10)
+		plan = make_plan(po)
+		schedule = make_schedule(plan, qty=5, scheduled_date=add_days(today(), 7))
+
+		make_receipt(po, delivery_schedule=schedule.name, qty=3)
+		with self.assertRaises(ValidationError):
+			make_receipt(po, delivery_schedule=schedule.name, qty=3)
+
+	def test_over_receipt_allowed_within_tolerance(self):
+		po = make_purchase_order(qty=10)
+		plan = make_plan(po)
+		plan.db_set("over_receipt_tolerance", 2)
+		schedule = make_schedule(plan, qty=5, scheduled_date=add_days(today(), 7))
+
+		make_receipt(po, delivery_schedule=schedule.name, qty=6)
+		schedule.reload()
+		self.assertEqual(schedule.received_qty, 6)
+		self.assertEqual(schedule.outstanding_qty, 0)
+		self.assertEqual(schedule.status, "Received")
+
+		# beyond the tolerance is still rejected (6 + 2 > 5 + 2)
+		with self.assertRaises(ValidationError):
+			make_receipt(po, delivery_schedule=schedule.name, qty=2)
+
+	def test_return_does_not_get_over_receipt_checked(self):
+		po = make_purchase_order(qty=10)
+		plan = make_plan(po)
+		schedule = make_schedule(plan, qty=5, scheduled_date=add_days(today(), 7))
+
+		pr = make_receipt(po, delivery_schedule=schedule.name, qty=5)
+		# a return referencing the scheduled line reduces the schedule and must
+		# not be treated as an over-receipt
+		make_receipt(
+			po,
+			qty=-2,
+			is_return=1,
+			return_against=pr.name,
+			purchase_receipt_item=pr.items[0].name,
+		)
+		schedule.reload()
+		self.assertEqual(schedule.received_qty, 3)
+		self.assertEqual(schedule.status, "Partially Received")
+
 	def test_wrong_item_link_rejected(self):
 		po = make_purchase_order(qty=10)
 		plan = make_plan(po)

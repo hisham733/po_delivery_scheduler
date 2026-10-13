@@ -5,10 +5,14 @@ frappe.ui.form.on("Purchase Order", {
 	refresh: function (frm) {
 		if (frm.is_new()) return;
 
+		// Only submitted / active Purchase Orders support delivery scheduling,
+		// and only for users who may read delivery plans. Read-only users can
+		// still open an existing plan; creation is enforced server-side.
 		const can_schedule =
-			frm.doc.docstatus === 1 && !["Cancelled", "Closed"].includes(frm.doc.status);
+			frm.doc.docstatus === 1 &&
+			!["Cancelled", "Closed"].includes(frm.doc.status) &&
+			frappe.model.can_read("PO Delivery Plan");
 
-		// Only submitted / active Purchase Orders support delivery scheduling.
 		if (!can_schedule) return;
 
 		frm.add_custom_button(

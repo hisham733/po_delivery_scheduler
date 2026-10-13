@@ -85,6 +85,56 @@ class TestPODeliveryPlan(FrappeTestCase):
 		s2.reload()
 		self.assertEqual(s2.status, "Cancelled")
 
+	def test_cancel_plan_preserves_received_schedules(self):
+		po = make_purchase_order(qty=10)
+		plan = make_plan(po)
+		received = make_schedule(plan, qty=5, scheduled_date=add_days(today(), 5))
+		make_receipt(po, delivery_schedule=received.name, qty=5)
+		open_schedule = make_schedule(plan, qty=5, scheduled_date=add_days(today(), 6))
+
+		plan.cancel_plan()
+
+		plan.reload()
+		self.assertEqual(plan.status, "Cancelled")
+
+		# the completed delivery keeps its history
+		received.reload()
+		self.assertEqual(received.status, "Received")
+		self.assertEqual(received.cancelled, 0)
+		self.assertEqual(received.received_qty, 5)
+
+		# the outstanding schedule is cancelled
+		open_schedule.reload()
+		self.assertEqual(open_schedule.status, "Cancelled")
+		self.assertEqual(open_schedule.cancelled, 1)
+
+	def test_po_cancel_preserves_received_schedule_history(self):
+		po = make_purchase_order(qty=10)
+		plan = make_plan(po)
+		received = make_schedule(plan, qty=5, scheduled_date=add_days(today(), 5))
+		# Simulate a fully delivered schedule. ERPNext blocks cancelling a PO
+		# that has a submitted receipt against it, so set the tracking fields
+		# directly instead of creating a receipt.
+		frappe.db.set_value(
+			"PO Delivery Schedule",
+			received.name,
+			{"received_qty": 5, "outstanding_qty": 0, "status": "Received"},
+		)
+		open_schedule = make_schedule(plan, qty=5, scheduled_date=add_days(today(), 6))
+
+		po.cancel()
+
+		plan.reload()
+		self.assertEqual(plan.status, "Cancelled")
+
+		received.reload()
+		self.assertEqual(received.status, "Received")
+		self.assertEqual(received.cancelled, 0)
+
+		open_schedule.reload()
+		self.assertEqual(open_schedule.status, "Cancelled")
+		self.assertEqual(open_schedule.cancelled, 1)
+
 	def test_plan_status_lifecycle(self):
 		po = make_purchase_order(qty=10)
 		plan = make_plan(po)
