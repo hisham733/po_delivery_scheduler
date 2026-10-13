@@ -74,11 +74,17 @@ def get_po_item_query(purchase_order: str, txt: str = None):
 
 @frappe.whitelist()
 def get_plan_schedules(delivery_plan: str):
-	"""List the schedules of a plan for rendering on the plan form."""
+	"""List the schedules of a plan for rendering on the plan form.
+
+	Uses ``frappe.get_list`` (not ``frappe.get_all``) so the database query
+	itself applies role permissions and User Permissions (Company/Supplier)
+	instead of bypassing them. The plan read check below is kept as an early,
+	explicit guard.
+	"""
 	plan = frappe.get_doc("PO Delivery Plan", delivery_plan)
 	plan.check_permission("read")
 
-	return frappe.get_all(
+	return frappe.get_list(
 		"PO Delivery Schedule",
 		filters={"delivery_plan": delivery_plan},
 		fields=[
@@ -100,6 +106,7 @@ def get_plan_schedules(delivery_plan: str):
 			"remarks",
 		],
 		order_by="scheduled_date asc, item_code asc",
+		limit_page_length=0,
 	)
 
 

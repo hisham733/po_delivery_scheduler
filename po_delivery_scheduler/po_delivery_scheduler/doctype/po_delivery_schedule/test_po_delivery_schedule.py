@@ -14,6 +14,7 @@ from po_delivery_scheduler.po_delivery_scheduler.tests import (
 	make_plan,
 	make_purchase_order,
 	make_receipt,
+	make_receipt_lines,
 	make_schedule,
 	make_supplier,
 )
@@ -227,3 +228,74 @@ class TestPODeliverySchedule(FrappeTestCase):
 		schedule.reload()
 		self.assertEqual(schedule.received_qty, 4)
 		self.assertEqual(schedule.outstanding_qty, 6)
+
+	def test_multiple_lines_on_one_schedule_are_accumulated(self):
+		"""Several receipt lines against the same schedule must be summed.
+
+		Each line on its own fits inside the schedule, but together they exceed
+		it, so the whole receipt must be rejected.
+		"""
+		po = make_purchase_order(qty=10)
+		plan = make_plan(po)
+		schedule = make_schedule(plan, qty=5, scheduled_date=add_days(today(), 7))
+
+		with self.assertRaises(ValidationError):
+			make_receipt_lines(
+				po,
+				[
+					{"qty": 3, "delivery_schedule": schedule.name},
+					{"qty": 3, "delivery_schedule": schedule.name},
+				],
+			)
+
+		# 2 + 3 == 5 exactly is allowed and both lines count
+		make_receipt_lines(
+			po,
+			[
+				{"qty": 2, "delivery_schedule": schedule.name},
+				{"qty": 3, "delivery_schedule": schedule.name},
+			],
+		)
+		schedule.reload()
+		self.assertEqual(schedule.received_qty, 5)
+		self.assertEqual(schedule.outstanding_qty, 0)
+		self.assertEqual(schedule.status, "Received")
+
+	def test_receipt_spanning_multiple_schedules_updates_all(self):
+		"""A single receipt that references several schedules updates each one."""
+		po = make_purchase_order(qty=10)
+		plan = make_plan(po)
+		s1 = make_schedule(plan, qty=4, scheduled_date=add_days(today(), 7))
+		s2 = make_schedule(plan, qty=4, scheduled_date=add_days(today(), 8))
+
+		make_receipt_lines(
+			po,
+			[
+				{"qty": 4, "delivery_schedule": s1.name},
+				{"qty": 4, "delivery_schedule": s2.name},
+			],
+		)
+
+		s1.reload()
+		s2.reload()
+		self.assertEqual(s1.status, "Received")
+		self.assertEqual(s1.received_qty, 4)
+		self.assertEqual(s2.status, "Received")
+		self.assertEqual(s2.received_qty, 4)
+
+	def test_received_quantity_current_read_matches_plain_read(self):
+		"""The locking (current) read returns the same authoritative figure."""
+		from po_delivery_scheduler.po_delivery_scheduler.receipt_integration import (
+			get_received_quantity_for_schedule,
+		)
+
+		po = make_purchase_order(qty=10)
+		plan = make_plan(po)
+		schedule = make_schedule(plan, qty=10, scheduled_date=add_days(today(), 7))
+		make_receipt(po, delivery_schedule=schedule.name, qty=3)
+
+		plain = get_received_quantity_for_schedule(schedule.name, 1.0)
+		locked = get_received_quantity_for_schedule(schedule.name, 1.0, for_update=True)
+		self.assertEqual(flt(plain), 3)
+		self.assertEqual(flt(locked), 3)
+

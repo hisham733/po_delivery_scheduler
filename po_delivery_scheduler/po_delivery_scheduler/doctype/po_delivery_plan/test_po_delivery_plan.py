@@ -52,6 +52,47 @@ class TestPODeliveryPlan(FrappeTestCase):
 		options_txt = get_po_item_query(po.name, txt="NOPE")
 		self.assertEqual(len(options_txt), 0)
 
+	def test_get_plan_schedules_returns_rows_for_authorized_user(self):
+		po = make_purchase_order(qty=10)
+		plan = make_plan(po)
+		schedule = make_schedule(plan, qty=5, scheduled_date=add_days(today(), 7))
+
+		from po_delivery_scheduler.po_delivery_scheduler.api import get_plan_schedules
+
+		names = {row["name"] for row in get_plan_schedules(plan.name)}
+		self.assertIn(schedule.name, names)
+
+	def test_get_plan_schedules_enforces_schedule_read_permission(self):
+		"""A user who may read the plan but not its schedules gets no rows.
+
+		Regression guard for the earlier use of ``frappe.get_all`` (which sets
+		``ignore_permissions=True``): the schedule query must itself be
+		permission-aware.
+		"""
+		po = make_purchase_order(qty=10)
+		plan = make_plan(po)
+		make_schedule(plan, qty=5, scheduled_date=add_days(today(), 7))
+
+		role = "PDS Plan Only Reader"
+		if not frappe.db.exists("Role", role):
+			frappe.get_doc({"doctype": "Role", "role_name": role}).insert(ignore_permissions=True)
+		from frappe.permissions import add_permission
+
+		add_permission("PO Delivery Plan", role, ptype="read")
+
+		user = self._make_user("pds_plan_only@example.com", [role])
+
+		from po_delivery_scheduler.po_delivery_scheduler.api import get_plan_schedules
+
+		frappe.set_user(user.name)
+		try:
+			# plan read is allowed, but PO Delivery Schedule read is not
+			with self.assertRaises(frappe.PermissionError):
+				get_plan_schedules(plan.name)
+		finally:
+			frappe.set_user("Administrator")
+
+
 	def test_unique_plan_enforced(self):
 		po = make_purchase_order(qty=10)
 		make_plan(po)
@@ -210,3 +251,26 @@ class TestPODeliveryPlan(FrappeTestCase):
 
 		schedule.reload()
 		self.assertIn("FAILED", schedule.reminder_note)
+
+	def _make_user(self, email, roles):
+		if frappe.db.exists("User", email):
+			return frappe.get_doc("User", email)
+
+		user = frappe.get_doc(
+			{
+				"doctype": "User",
+				"email": email,
+				"first_name": email.split("@")[0],
+				"send_welcome_email": 0,
+				"roles": [{"role": role} for role in roles],
+			}
+		).insert(ignore_permissions=True)
+
+		def _cleanup():
+			if frappe.db.exists("User", email):
+				for permission in frappe.get_all("User Permission", filters={"user": email}, pluck="name"):
+					frappe.delete_doc("User Permission", permission, force=True, ignore_permissions=True)
+				frappe.delete_doc("User", email, force=True, ignore_permissions=True)
+
+		self.addCleanup(_cleanup)
+		return user

@@ -132,6 +132,45 @@ def make_receipt(po, submitted=1, delivery_schedule=None, qty=None, item_code=No
 	return pr
 
 
+def make_receipt_lines(po, lines, submitted=1):
+	"""Build a Purchase Receipt with one item row per entry in ``lines``.
+
+	Each entry is a dict accepting ``qty`` (required), ``delivery_schedule``,
+	``item_code``, ``uom``, ``conversion_factor``, ``purchase_order_item`` and
+	``purchase_receipt_item``. Missing values fall back to the PO's first item.
+	Useful for exercising multi-line receipts that reference several schedules
+	or repeat the same schedule on more than one line.
+	"""
+	defaults = get_company_defaults()
+	pr = frappe.new_doc("Purchase Receipt")
+	pr.company = COMPANY
+	pr.supplier = po.supplier
+	pr.posting_date = frappe.utils.today()
+	pr.set_warehouse = po.set_warehouse or get_item_warehouse()
+	po_item = po.items[0]
+	for line in lines:
+		pr.append(
+			"items",
+			{
+				"item_code": line.get("item_code", po_item.item_code),
+				"qty": line["qty"],
+				"rate": po_item.rate,
+				"uom": line.get("uom", po_item.uom),
+				"conversion_factor": line.get("conversion_factor", po_item.conversion_factor),
+				"purchase_order": po.name,
+				"purchase_order_item": line.get("purchase_order_item", po_item.name),
+				"po_delivery_schedule": line.get("delivery_schedule", ""),
+				"warehouse": po.set_warehouse or get_item_warehouse(),
+				"expense_account": defaults.default_expense_account,
+				"purchase_receipt_item": line.get("purchase_receipt_item", ""),
+			},
+		)
+	pr.insert(ignore_permissions=True)
+	if submitted:
+		pr.submit()
+	return pr
+
+
 def make_plan(po=None, with_schedule=None, reminders_enabled=0, reminder_lead_days=0):
 	po = po or make_purchase_order()
 	plan = frappe.get_doc(

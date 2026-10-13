@@ -51,11 +51,29 @@ def _convert_to_schedule_uom(qty, conversion_factor, schedule_conversion_factor)
 	stock UOM back into the schedule UOM (which equals the PO Item UOM).
 	"""
 	stock_qty = flt(qty) * flt(conversion_factor or 1)
-	return flt(stock_qty / flt(schedule_conversion_factor or 1), 6)
+	return _stock_to_schedule_uom(stock_qty, schedule_conversion_factor)
 
 
-def get_received_quantity_for_schedule(schedule_name: str, schedule_conversion_factor: float) -> float:
-	"""Sum authoritative receipt quantities for one delivery schedule."""
+def _stock_to_schedule_uom(stock_qty, schedule_conversion_factor) -> float:
+	"""Convert a stock-UOM quantity into the schedule's reference UOM."""
+	return flt(flt(stock_qty) / flt(schedule_conversion_factor or 1), 6)
+
+
+def get_received_quantity_for_schedule(
+	schedule_name: str, schedule_conversion_factor: float, *, for_update: bool = False
+) -> float:
+	"""Sum authoritative receipt quantities for one delivery schedule.
+
+	When ``for_update`` is true the aggregate is read with ``FOR UPDATE`` - a
+	*current* (locking) read. Under InnoDB's default REPEATABLE READ isolation a
+	plain read would use the transaction snapshot taken before the schedule row
+	lock was acquired and could miss an allocation committed by a concurrent
+	receipt. A locking read always sees the latest committed rows, so callers
+	that have already locked the schedule must pass ``for_update=True`` when
+	validating remaining quantity.
+	"""
+	lock_clause = " FOR UPDATE" if for_update else ""
+
 	direct = frappe.db.sql(
 		"""
 		SELECT item.qty AS qty, item.conversion_factor AS conversion_factor
@@ -64,7 +82,8 @@ def get_received_quantity_for_schedule(schedule_name: str, schedule_conversion_f
 		WHERE pr.docstatus = 1
 			AND pr.is_return = 0
 			AND item.po_delivery_schedule = %s
-		""",
+		"""
+		+ lock_clause,
 		(schedule_name,),
 		as_dict=1,
 	)
@@ -74,14 +93,12 @@ def get_received_quantity_for_schedule(schedule_name: str, schedule_conversion_f
 		SELECT abs(rim.qty) AS qty, rim.conversion_factor AS conversion_factor
 		FROM `tabPurchase Receipt Item` rim
 		INNER JOIN `tabPurchase Receipt` rpr ON rpr.name = rim.parent
+		INNER JOIN `tabPurchase Receipt Item` orig ON orig.name = rim.purchase_receipt_item
 		WHERE rpr.docstatus = 1
 			AND rpr.is_return = 1
-			AND rim.purchase_receipt_item IN (
-				SELECT name
-				FROM `tabPurchase Receipt Item`
-				WHERE po_delivery_schedule = %s
-			)
-		""",
+			AND orig.po_delivery_schedule = %s
+		"""
+		+ lock_clause,
 		(schedule_name,),
 		as_dict=1,
 	)
@@ -180,12 +197,30 @@ def validate_receipt_schedule_links(pr, method=None) -> None:
 	A receipt line may not push a schedule's cumulative received quantity (in
 	the schedule's reference UOM) past ``scheduled_qty`` plus the plan's
 	``over_receipt_tolerance``. The default tolerance is 0, i.e. any
-	over-receipt is rejected. The affected schedule row is locked ``FOR UPDATE``
-	so two concurrent receipts cannot both slip through validation.
+	over-receipt is rejected.
+
+	Concurrency
+	-----------
+	Concurrent receipts against the same schedule are serialised by taking a
+	``FOR UPDATE`` lock on the ``PO Delivery Schedule`` row(s) *before* the
+	remaining quantity is validated, and by re-reading both the schedule
+	attributes and the already-received aggregate with locking (current) reads
+	afterwards. This defeats the stale REPEATABLE READ snapshot that would
+	otherwise let two receipts each validate against the pre-existing quantity
+	and together over-receive the schedule.
+
+	The lock is held until the surrounding transaction commits or rolls back;
+	this function never commits. When a receipt references several schedules
+	they are locked in ``name`` order so two receipts referencing the same set
+	can never deadlock on each other.
 	"""
-	pending_qty: dict = {}
+	# -- pass 1: collect referenced schedules and validate static links --------
+	# These checks (existence, PO / item match, permission) do not depend on
+	# quantities and are read without locks; the authoritative quantity check
+	# happens under lock in pass 2.
 	meta: dict = {}
 	first_idx: dict = {}
+	pending_stock_qty: dict = {}
 
 	for item in pr.get("items") or []:
 		schedule_name = _schedule_name(item)
@@ -261,24 +296,57 @@ def validate_receipt_schedule_links(pr, method=None) -> None:
 				)
 			)
 
-		schedule_cf = flt(values.conversion_factor or 1)
 		first_idx.setdefault(schedule_name, item.idx)
-		pending_qty[schedule_name] = pending_qty.get(schedule_name, 0.0) + _convert_to_schedule_uom(
-			item.get("qty"), item.get("conversion_factor"), schedule_cf
+		# Accumulate in the item's stock UOM; the conversion into the schedule
+		# UOM is done under lock once the authoritative conversion factor is
+		# (re-)read.
+		pending_stock_qty[schedule_name] = pending_stock_qty.get(schedule_name, 0.0) + (
+			flt(item.get("qty")) * flt(item.get("conversion_factor") or 1)
 		)
 
-	for schedule_name, added in pending_qty.items():
-		values = meta[schedule_name]
-		if not values or values.cancelled:
-			continue
-
-		# Lock the schedule so concurrent receipts are serialised.
-		frappe.db.sql(
-			"SELECT name FROM `tabPO Delivery Schedule` WHERE name = %s FOR UPDATE", schedule_name
+	# -- pass 2: lock each schedule, then validate remaining quantity ----------
+	# Deterministic lock order (sorted by name) prevents deadlocks between two
+	# receipts that reference the same schedules.
+	for schedule_name in sorted(pending_stock_qty):
+		# Lock the schedule row and read its authoritative attributes as the
+		# latest committed values (current read).
+		values = frappe.db.get_value(
+			"PO Delivery Schedule",
+			schedule_name,
+			[
+				"cancelled",
+				"delivery_plan",
+				"scheduled_qty",
+				"conversion_factor",
+				"uom",
+			],
+			as_dict=1,
+			for_update=True,
 		)
+
+		if not values:
+			frappe.throw(
+				_("{0}: Delivery Schedule {1} does not exist or was deleted.").format(
+					first_idx.get(schedule_name, ""), schedule_name
+				)
+			)
+
+		if values.cancelled:
+			frappe.throw(
+				_("{0}: Delivery Schedule {1} is cancelled and cannot receive stock.").format(
+					first_idx.get(schedule_name, ""), schedule_name
+				)
+			)
 
 		schedule_cf = flt(values.conversion_factor or 1)
-		already_received = get_received_quantity_for_schedule(schedule_name, schedule_cf)
+		added = _stock_to_schedule_uom(pending_stock_qty[schedule_name], schedule_cf)
+
+		# Locked schedule => no other writer for this schedule can be between
+		# here and commit. Read the receipt aggregate as a current read so a
+		# concurrent allocation committed before we acquired the lock is seen.
+		already_received = get_received_quantity_for_schedule(
+			schedule_name, schedule_cf, for_update=True
+		)
 		tolerance = flt(
 			frappe.db.get_value("PO Delivery Plan", values.delivery_plan, "over_receipt_tolerance") or 0
 		)
