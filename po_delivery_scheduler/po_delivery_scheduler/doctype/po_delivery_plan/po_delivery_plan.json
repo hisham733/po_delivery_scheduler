@@ -1,0 +1,201 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "PODP-.#####",
+ "creation": "2026-10-13 10:39:07.920026",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "section_break_po",
+  "purchase_order",
+  "supplier",
+  "company",
+  "column_break_po",
+  "status",
+  "po_status",
+  "owner_user",
+  "section_break_settings",
+  "reminders_enabled",
+  "reminder_lead_days",
+  "column_break_settings",
+  "notes",
+  "section_break_schedules",
+  "schedules_html"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_po",
+   "fieldtype": "Section Break",
+   "label": "Purchase Order"
+  },
+  {
+   "fieldname": "purchase_order",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Purchase Order",
+   "options": "Purchase Order",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "supplier",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Supplier",
+   "options": "Supplier",
+   "reqd": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_po",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Draft",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Draft\nActive\nCompleted\nCancelled",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "purchase_order.status",
+   "fieldname": "po_status",
+   "fieldtype": "Data",
+   "label": "Purchase Order Status",
+   "read_only": 1
+  },
+  {
+   "default": "__user",
+   "description": "Internal user that receives delivery reminders.",
+   "fieldname": "owner_user",
+   "fieldtype": "Link",
+   "label": "Responsible Purchasing User",
+   "options": "User"
+  },
+  {
+   "fieldname": "section_break_settings",
+   "fieldtype": "Section Break",
+   "label": "Settings"
+  },
+  {
+   "default": "1",
+   "fieldname": "reminders_enabled",
+   "fieldtype": "Check",
+   "label": "Reminders Enabled"
+  },
+  {
+   "default": "3",
+   "description": "Send 'due soon' reminders this many days before the scheduled date.",
+   "fieldname": "reminder_lead_days",
+   "fieldtype": "Int",
+   "label": "Reminder Lead Days"
+  },
+  {
+   "fieldname": "column_break_settings",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "section_break_schedules",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "schedules_html",
+   "fieldtype": "HTML",
+   "label": "Delivery Schedule Entries"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-10-13 10:46:03.186402",
+ "modified_by": "Administrator",
+ "module": "PO Delivery Scheduler",
+ "name": "PO Delivery Plan",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Purchase Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Purchase User"
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Stock Manager"
+  },
+  {
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "Stock User"
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "PO Delivery Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "search_fields": "purchase_order, supplier, company",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "purchase_order",
+ "track_changes": 1
+}

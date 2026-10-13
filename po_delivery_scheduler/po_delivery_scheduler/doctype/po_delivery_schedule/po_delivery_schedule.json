@@ -1,0 +1,310 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "PODS-.#####",
+ "creation": "2026-10-13 10:39:08.533535",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "section_break_po",
+  "delivery_plan",
+  "purchase_order",
+  "supplier",
+  "company",
+  "column_break_po",
+  "purchase_order_item",
+  "item_code",
+  "item_name",
+  "section_break_schedule",
+  "scheduled_date",
+  "scheduled_qty",
+  "uom",
+  "conversion_factor",
+  "column_break_schedule",
+  "status",
+  "cancelled",
+  "cancellation_reason",
+  "section_break_confirmation",
+  "confirmation_status",
+  "supplier_confirmed_date",
+  "column_break_confirmation",
+  "remarks",
+  "section_break_tracking",
+  "received_qty",
+  "outstanding_qty",
+  "column_break_tracking",
+  "last_reminder_date",
+  "reminder_note"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_po",
+   "fieldtype": "Section Break",
+   "label": "Purchase Order"
+  },
+  {
+   "fieldname": "delivery_plan",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Delivery Plan",
+   "options": "PO Delivery Plan",
+   "reqd": 1
+  },
+  {
+   "fieldname": "purchase_order",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Purchase Order",
+   "options": "Purchase Order",
+   "reqd": 1
+  },
+  {
+   "fieldname": "supplier",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Supplier",
+   "options": "Supplier",
+   "reqd": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_po",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "purchase_order_item",
+   "fieldtype": "Link",
+   "ignore_user_permissions": 1,
+   "label": "Purchase Order Item",
+   "options": "Purchase Order Item",
+   "reqd": 1
+  },
+  {
+   "fieldname": "item_code",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Item Code",
+   "options": "Item",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "purchase_order_item.item_name",
+   "fieldname": "item_name",
+   "fieldtype": "Data",
+   "label": "Item Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_schedule",
+   "fieldtype": "Section Break",
+   "label": "Schedule"
+  },
+  {
+   "fieldname": "scheduled_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Scheduled Delivery Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "scheduled_qty",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Scheduled Quantity",
+   "reqd": 1
+  },
+  {
+   "fieldname": "uom",
+   "fieldtype": "Link",
+   "label": "UOM",
+   "options": "UOM",
+   "reqd": 1
+  },
+  {
+   "default": "1",
+   "description": "Conversion factor of the Purchase Order Item UOM to the stock UOM.",
+   "fieldname": "conversion_factor",
+   "fieldtype": "Float",
+   "label": "UOM Conversion Factor",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_schedule",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Planned",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Planned\nConfirmed\nPartially Received\nReceived\nOverdue\nCancelled",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "cancelled",
+   "fieldtype": "Check",
+   "label": "Cancelled"
+  },
+  {
+   "fieldname": "cancellation_reason",
+   "fieldtype": "Small Text",
+   "label": "Cancellation Reason"
+  },
+  {
+   "fieldname": "section_break_confirmation",
+   "fieldtype": "Section Break",
+   "label": "Supplier Confirmation"
+  },
+  {
+   "default": "Not Requested",
+   "fieldname": "confirmation_status",
+   "fieldtype": "Select",
+   "in_standard_filter": 1,
+   "label": "Confirmation Status",
+   "options": "Not Requested\nAwaiting Confirmation\nConfirmed\nRejected"
+  },
+  {
+   "fieldname": "supplier_confirmed_date",
+   "fieldtype": "Date",
+   "label": "Supplier Confirmed Date"
+  },
+  {
+   "fieldname": "column_break_confirmation",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "label": "Remarks"
+  },
+  {
+   "fieldname": "section_break_tracking",
+   "fieldtype": "Section Break",
+   "label": "Receipt Tracking"
+  },
+  {
+   "fieldname": "received_qty",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Received Quantity",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "outstanding_qty",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Outstanding Quantity",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_tracking",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "last_reminder_date",
+   "fieldtype": "Date",
+   "label": "Last Reminder Date",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "reminder_note",
+   "fieldtype": "Small Text",
+   "label": "Reminder Note",
+   "no_copy": 1,
+   "read_only": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "is_calendar_and_gantt": 1,
+ "links": [],
+ "modified": "2026-10-13 10:46:04.547023",
+ "modified_by": "Administrator",
+ "module": "PO Delivery Scheduler",
+ "name": "PO Delivery Schedule",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Purchase Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Purchase User"
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Stock Manager"
+  },
+  {
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "Stock User"
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "PO Delivery Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "search_fields": "purchase_order, item_code, supplier",
+ "sort_field": "scheduled_date",
+ "sort_order": "ASC",
+ "states": [],
+ "title_field": "item_code",
+ "track_changes": 1
+}

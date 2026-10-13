@@ -1,0 +1,42 @@
+{
+ "cards": [
+  {
+   "card": "Scheduled Delivery Qty"
+  },
+  {
+   "card": "Received Delivery Qty"
+  },
+  {
+   "card": "Outstanding Delivery Qty"
+  },
+  {
+   "card": "Overdue Deliveries"
+  }
+ ],
+ "charts": [
+  {
+   "chart": "Scheduled Quantity Trend",
+   "width": "Half"
+  },
+  {
+   "chart": "Received Quantity Trend",
+   "width": "Half"
+  },
+  {
+   "chart": "Delivery Schedule Status",
+   "width": "Full"
+  }
+ ],
+ "creation": "2026-10-13 11:00:00.000000",
+ "dashboard_name": "PO Delivery",
+ "docstatus": 0,
+ "doctype": "Dashboard",
+ "idx": 0,
+ "is_default": 0,
+ "is_standard": 1,
+ "modified": "2026-10-13 11:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "PO Delivery Scheduler",
+ "name": "PO Delivery",
+ "owner": "Administrator"
+}

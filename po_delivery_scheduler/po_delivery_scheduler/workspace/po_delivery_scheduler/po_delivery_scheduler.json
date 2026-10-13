@@ -1,0 +1,154 @@
+{
+ "charts": [
+  {
+   "chart_name": "Scheduled Quantity Trend",
+   "label": "Scheduled Quantity Trend"
+  },
+  {
+   "chart_name": "Received Quantity Trend",
+   "label": "Received Quantity Trend"
+  },
+  {
+   "chart_name": "Delivery Schedule Status",
+   "label": "Delivery Schedule Status"
+  }
+ ],
+ "content": "[{\"id\": \"podHeader0\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Delivery Operations</b></span>\", \"col\": 12}}, {\"id\": \"podNcScheduled\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Scheduled Delivery Qty\", \"col\": 3}}, {\"id\": \"podNcReceived\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Received Delivery Qty\", \"col\": 3}}, {\"id\": \"podNcOutstanding\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Outstanding Delivery Qty\", \"col\": 3}}, {\"id\": \"podNcOverdue\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Overdue Deliveries\", \"col\": 3}}, {\"id\": \"podSpacer0\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"podHeaderTrends\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Trends</b></span>\", \"col\": 12}}, {\"id\": \"podChartScheduled\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Scheduled Quantity Trend\", \"col\": 6}}, {\"id\": \"podChartReceived\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Received Quantity Trend\", \"col\": 6}}, {\"id\": \"podChartStatus\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Delivery Schedule Status\", \"col\": 12}}, {\"id\": \"podSpacer1\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"podHeader1\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Deliveries</b></span>\", \"col\": 12}}, {\"id\": \"podScPlan\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"PO Delivery Plan\", \"col\": 3}}, {\"id\": \"podScSched\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"PO Delivery Schedule\", \"col\": 3}}, {\"id\": \"podScCalendar\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Delivery Calendar\", \"col\": 3}}, {\"id\": \"podScPO\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Purchase Order\", \"col\": 3}}, {\"id\": \"podSpacer2\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"podHeader2\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Masters &amp; Reports</b></span>\", \"col\": 12}}, {\"id\": \"podCardDel\", \"type\": \"card\", \"data\": {\"card_name\": \"Deliveries\", \"col\": 6}}, {\"id\": \"podCardRep\", \"type\": \"card\", \"data\": {\"card_name\": \"Reports\", \"col\": 6}}]",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "calender",
+ "idx": 0,
+ "indicator_color": "blue",
+ "is_hidden": 0,
+ "label": "PO Delivery Scheduler",
+ "links": [
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Deliveries",
+   "link_count": 0,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "PO Delivery Plan",
+   "link_count": 0,
+   "link_to": "PO Delivery Plan",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "PO Delivery Schedule",
+   "link_count": 0,
+   "link_to": "PO Delivery Schedule",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Purchase Order",
+   "link_count": 0,
+   "link_to": "Purchase Order",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Reports",
+   "link_count": 0,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "PO Delivery Overview",
+   "link_count": 0,
+   "link_to": "PO Delivery Overview",
+   "link_type": "Report",
+   "onboard": 0,
+   "report_ref_doctype": "PO Delivery Schedule",
+   "type": "Link"
+  }
+ ],
+ "module": "PO Delivery Scheduler",
+ "name": "PO Delivery Scheduler",
+ "number_cards": [
+  {
+   "label": "Scheduled Delivery Qty",
+   "number_card_name": "Scheduled Delivery Qty"
+  },
+  {
+   "label": "Received Delivery Qty",
+   "number_card_name": "Received Delivery Qty"
+  },
+  {
+   "label": "Outstanding Delivery Qty",
+   "number_card_name": "Outstanding Delivery Qty"
+  },
+  {
+   "label": "Overdue Deliveries",
+   "number_card_name": "Overdue Deliveries"
+  }
+ ],
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "restrict_to_domain": "",
+ "roles": [],
+ "sequence_id": 5.0,
+ "shortcuts": [
+  {
+   "color": "Blue",
+   "doc_view": "List",
+   "label": "PO Delivery Plan",
+   "link_to": "PO Delivery Plan",
+   "type": "DocType"
+  },
+  {
+   "color": "Green",
+   "doc_view": "List",
+   "label": "PO Delivery Schedule",
+   "link_to": "PO Delivery Schedule",
+   "type": "DocType"
+  },
+  {
+   "color": "Purple",
+   "doc_view": "Calendar",
+   "label": "Delivery Calendar",
+   "link_to": "PO Delivery Schedule",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Purchase Order",
+   "link_to": "Purchase Order",
+   "type": "DocType"
+  },
+  {
+   "color": "Orange",
+   "label": "PO Delivery Overview",
+   "link_to": "PO Delivery Overview",
+   "report_ref_doctype": "PO Delivery Schedule",
+   "type": "Report"
+  }
+ ],
+ "title": "PO Delivery Scheduler"
+}
